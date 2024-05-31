@@ -6,7 +6,7 @@ function _init()
  y = 2
  t = 0 --tick
  f = 0 --frame
- s = 6 --step
+ s = 6 --step 
  hero = 020
  initiate_spr_animations()
  init_counters()
@@ -23,18 +23,21 @@ function _draw()
 	map()
 	--print(map_tile_i)
 	spr(hero, x*8, y*8)
-	animate_map()		
+	check_doors(1)
+	animate_map()
+	
+	--print("close the door")
 end
 
 --we scan the tiles based on 
 --their drawing id
 function _update()
 	t = (t+1)%s
-	
 	scan_map()
 	animate_frame()
 	move()
- camera(0, 0)
+	
+ camera(level_index_j * 8, level_index_i* 8)
  printh("updating")
 end
 
@@ -42,35 +45,88 @@ end
 -->8
 function move()
 	local speed = 1
-	if btnp(⬇️)then
+	if btnp(⬇️) and check_block(x,y+1) then
 		y += speed
-	elseif  btnp(⬆️) then
+	elseif  btnp(⬆️) and check_block(x, y-1) then
 		y -= speed
-	elseif  btnp(⬅️) then
+	elseif  btnp(⬅️) and check_block(x-1, y) then
 		x -= speed
-	elseif  btnp(➡️) then
+	elseif  btnp(➡️) and check_block(x+1, y) then
 		x += speed
 	end
 end
 
-
 function scan_map()
 	for i = 0 + level_index_i, 15 + level_index_i do
   for j = 0 + level_index_j, 15 + level_index_j do
-      map_tile[i][j] = mget(i, j) 
+      --map_tile = mget(i, j)
+      levers = {{mget(13, 7)}}
+      doors = {{mget(12, 1)}}
 		end
 	end
+end
+
+
+--function that will open door when level is used
+function check_doors(level)
+	local string
+	local counter = 0 
+	if level == 1 then
+		if levers[level][1] == 004 then
+			mset(12, 1, 006)
+		elseif levers[level][1] == 003 then
+			mset(12, 1, 005)
+		end
+	end
+
+	if level == 2 then
+		
+	end
+end
+
+function check_block(x_pos, y_pos)
+		local tile = mget(x_pos, y_pos)
+		
+		if tile == 003 then
+			mset(x_pos, y_pos, 004)
+			
+		elseif tile == 004 then
+			mset(x_pos, y_pos, 003)
+		end
+		
+		if tile == 006 or tile == 007 then
+		level_index_j +=16
+		end
+		
+		if fget(tile, 7) then
+			return false
+		end
+		return true
 end
 -->8
 function animate_frame()
 	animate_frame_hero()
  animate_frame_sand()
+ animate_frame_door_opened()
+ animate_frame_door_closed()
 --	aniamte_spike()
 --	animate_worm_enemy()
 end
 
 function animate_frame_hero()
 	
+end
+
+function animate_frame_door_opened()
+	if t == 0 then
+		f_door_open = (f_door_open+1) % #spr_ddor_opened
+	end
+end
+
+function animate_frame_door_closed()
+	if t == 0 then
+		f_door_close = (f_door_close+1) % #spr_door_closed
+	end
 end
 
 function animate_frame_sand()
@@ -83,10 +139,14 @@ function animate_map()
 	for i=0 + level_index_i, 15 + level_index_i do
 		for j = 0 + level_index_j, 15 + level_index_j do
 			local tile = mget(i, j)
-			--map_tile[i][j]
 			if tile  == 1 or tile == 2 then
-			--	mset(i, j,	0)
 				mset(i, j, spr_sands[f_sand+1])
+			end
+			if tile == 005 then
+				mset(i, j, spr_door_closed[f_door_close + 1])
+			end
+			if tile == 006 or tile == 007 then
+				mset(i, j, spr_ddor_opened[f_door_open + 1])
 			end
 		end
 	end
@@ -105,24 +165,22 @@ function initiate_spr_animations()
 	spr_sands = {1, 2}
 	spr_enemy_idle = {025}
 	spr_enemy_walk = {024}
+	spr_mountain = {012}
 end
 
 function init_counters()
 	map_index = 0
 	map_tile_i = {}
-		map_tile_j = {}
-		map_tile = {}
-	for i = 0, 15 do
-		map_tile_i[i] = 0
-		map_tile_j[i] = 0
-		map_tile[i] = {}
-		for j = 0, 15 do
-			map_tile[i][j] = 0
-		end
-	end	
+	map_tile_j = {}
+	map_tile = 0
+--	map_tile[i] = {}
 	level_index_i = 0
 	level_index_j = 0
 	f_sand = 0
+	f_door_open = 0
+	f_door_close = 0
+	levers = {{mget(13, 7)}}
+	doors = {{mget(12, 1)}}
 end
 __gfx__
 00000000999999499999999499999999999999999999999999999999999999999999999999999999999999994004040499999999000000004444444400000000
@@ -149,6 +207,9 @@ __gfx__
 99944444444055990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 99944444444055990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 99944444444055990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+__gff__
+0000008081808080000000808000000000800000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0b101108080c01010101010c050c010b0b02020102010b0b0b0c01020102020b0b0c0c010c0c0c020c0c0c0c0c0c0c0b0b0c0c0c0c0c0c0c080808080808080b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
